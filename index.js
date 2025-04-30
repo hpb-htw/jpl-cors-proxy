@@ -73,7 +73,6 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
         headers: extractHeader(response, event),
         ...status
     };
-    console.log(responseInit);
     return new Response(responseBody, responseInit);
 }
 
