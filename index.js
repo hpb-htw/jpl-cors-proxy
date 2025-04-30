@@ -20,21 +20,7 @@ const whitelistOrigins = [
     ".*"
 ]; // regexp for whitelisted origins
 
-// Function to check if a given URI or origin is listed in the whitelist or blacklist
-function isListedInWhitelist(uri, listing) {
-    let isListed = false;
-    if (typeof uri === "string") {
-        for(const pattern of listing) {
-            if (uri.match(pattern)) {
-                return true;
-            }
-        }
-    } else {
-        // When URI is null (e.g., when Origin header is missing), decide based on the implementation
-        isListed = true; // true accepts null origins, false would reject them
-    }
-    return isListed;
-}
+const GITHUB_REPO = "https://github.com/hpb-htw/jpl-cors-proxy";
 
 // Event listener for incoming fetch requests
 addEventListener("fetch", async event => {
@@ -158,18 +144,38 @@ addEventListener("fetch", async event => {
                     );
                 }
             } else {
-                return new Response(
-                    "Create your own CORS proxy</br>\n" +
-                    "<a href='https://github.com/Zibri/cloudflare-cors-anywhere'>https://github.com/Zibri/cloudflare-cors-anywhere</a></br>\n" ,
-                    {
-                        status: 403,
-                        statusText: "Forbidden",
-                        headers: {
-                            "Content-Type": "text/html"
-                        }
-                    }
-                );
+                return createForbiddenResponse();
             }
         })()
     );
 });
+
+function createForbiddenResponse() {
+    return new Response(
+        "Create your own CORS proxy</br>\n" +
+        `<a href='${GITHUB_REPO}'>${GITHUB_REPO}</a></br>\n` ,
+        {
+            status: 403,
+            statusText: "Forbidden",
+            headers: {
+                "Content-Type": "text/html"
+            }
+        }
+    );
+}
+
+// Function to check if a given URI or origin is listed in the whitelist or blacklist
+function isListedInWhitelist(uri, listing) {
+    let isListed = false;
+    if (typeof uri === "string") {
+        for(const pattern of listing) {
+            if (uri.match(pattern)) {
+                return true;
+            }
+        }
+    } else {
+        // When URI is null (e.g., when Origin header is missing), decide based on the implementation
+        isListed = true; // true accepts null origins, false would reject them
+    }
+    return isListed;
+}
