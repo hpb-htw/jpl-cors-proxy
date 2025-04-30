@@ -17,8 +17,7 @@ The main goal is to facilitate cross-origin requests while enforcing specific se
 // whitelist = [ "^http.?://www.zibri.org$", "zibri.org$", "test\\..*" ];  // regexp for whitelisted urls
 const blacklistUrls = []; // regexp for blacklisted urls
 const whitelistOrigins = [
-    /*".*"*/
-    "ssd.jpl.nasa.gov"
+    ".*"
 ]; // regexp for whitelisted origins
 
 // Function to check if a given URI or origin is listed in the whitelist or blacklist
@@ -145,13 +144,6 @@ addEventListener("fetch", async event => {
                 } else {
                     const responseHeaders = new Headers();
                     setupCORSHeaders(responseHeaders);
-
-                    let country = false;
-                    let colo = false;
-                    if (typeof event.request.cf !== "undefined") {
-                        country = event.request.cf.country || false;
-                        colo = event.request.cf.colo || false;
-                    }
 
                     return new Response(
                         "CLOUDFLARE-CORS-ANYWHERE\n\n" +
