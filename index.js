@@ -95,7 +95,7 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
         allResponseHeaders[key] = value;
     }
     exposedHeaders.push("cors-received-headers");
-    setupCORSHeaders(responseHeaders);
+    setupCORSHeaders(responseHeaders, event);
 
     responseHeaders.set(
         "Access-Control-Expose-Headers",
@@ -105,7 +105,7 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
         "cors-received-headers",
         JSON.stringify(allResponseHeaders)
     );
-    
+
     const isPreflightRequest = event.request.method === "OPTIONS";
     const responseBody = isPreflightRequest
         ? null
