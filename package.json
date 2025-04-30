@@ -10,14 +10,6 @@
     "author": "{{ authors }}",
     "license": "MIT",
     "devDependencies": {
-        "husky": "^2.1.0",
-        "prettier": "^1.17.0",
-        "wrangler": "^4.14.0"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "npm run format",
-            "pre-push": "npm run format"
-        }
+        "wrangler": "4.14.0"
     }
 }
