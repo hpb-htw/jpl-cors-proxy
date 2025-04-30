@@ -17,7 +17,7 @@ The main goal is to facilitate cross-origin requests while enforcing specific se
 // whitelist = [ "^http.?://www.zibri.org$", "zibri.org$", "test\\..*" ];  // regexp for whitelisted urls
 const blacklistUrls = []; // regexp for blacklisted urls
 const whitelistOrigins = [
-    /*".*"*/,
+    /*".*"*/
     "ssd.jpl.nasa.gov"
 ]; // regexp for whitelisted origins
 
@@ -25,11 +25,11 @@ const whitelistOrigins = [
 function isListedInWhitelist(uri, listing) {
     let isListed = false;
     if (typeof uri === "string") {
-        listing.forEach(pattern => {
-            if (uri.match(pattern) !== null) {
-                isListed = true;
+        for(const pattern of listing) {
+            if (uri.match(pattern)) {
+                return true;
             }
-        });
+        }
     } else {
         // When URI is null (e.g., when Origin header is missing), decide based on the implementation
         isListed = true; // true accepts null origins, false would reject them
@@ -74,8 +74,6 @@ addEventListener("fetch", async event => {
             );
 
             const originHeader = event.request.headers.get("Origin");
-            const connectingIp = event.request.headers.get("CF-Connecting-IP");
-
             if (
                 !isListedInWhitelist(targetUrl, blacklistUrls) &&
                 isListedInWhitelist(originHeader, whitelistOrigins)
