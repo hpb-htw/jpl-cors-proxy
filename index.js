@@ -58,7 +58,7 @@ function makeCustomHeader(event) {
 }
 
 async function createProxyResponse(event, customHeaders, targetUrl) {
-    const response = await fetchTargetUrl(targetUrl, event);
+    const response = await fetchTargetUrl(targetUrl, customHeaders, event);
 
     const isPreflightRequest = event.request.method === "OPTIONS";
     const responseBody = isPreflightRequest
@@ -77,7 +77,7 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
     return new Response(responseBody, responseInit);
 }
 
-async function fetchTargetUrl(targetUrl, event) {
+async function fetchTargetUrl(targetUrl, customHeaders, event) {
     const filteredHeaders = {};
     for (const [key, value] of event.request.headers.entries()) {
         if (
