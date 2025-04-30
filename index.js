@@ -41,15 +41,7 @@ addEventListener("fetch", async event => {
                 !isListedInWhitelist(targetUrl, blacklistUrls) &&
                 isListedInWhitelist(originHeader, whitelistOrigins)
             ) {
-                let customHeaders = event.request.headers.get("x-cors-headers");
-
-                if (customHeaders !== null) {
-                    try {
-                        customHeaders = JSON.parse(customHeaders);
-                    } catch (e) {
-                    }
-                }
-
+                let customHeaders = makeCustomHeader(event);
                 if (originUrl.search.startsWith("?")) {
                     const filteredHeaders = {};
                     for (const [key, value] of event.request.headers.entries()) {
@@ -114,6 +106,15 @@ addEventListener("fetch", async event => {
         })()
     );
 });
+
+function makeCustomHeader(event) {
+    try {
+        const xCorsHeader = event.request.headers.get("x-cors-headers");
+        return JSON.parse(xCorsHeader);
+    }catch (e) {
+        return null
+    }
+}
 
 function createEmptyUriResponse(event, customHeaders) {
     const responseHeaders = new Headers();
