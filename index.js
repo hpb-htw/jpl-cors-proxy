@@ -164,6 +164,7 @@ function isListedInWhitelist(uri, listing) {
 
 // Function to modify headers to enable CORS
 function setupCORSHeaders(headers, event) {
+    const isPreflightRequest = event.request.method === "OPTIONS";
     headers.set(
         "Access-Control-Allow-Origin",
         event.request.headers.get("Origin")
