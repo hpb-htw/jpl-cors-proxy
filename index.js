@@ -16,7 +16,10 @@ The main goal is to facilitate cross-origin requests while enforcing specific se
 // Configuration: Whitelist and Blacklist (not used in this version)
 // whitelist = [ "^http.?://www.zibri.org$", "zibri.org$", "test\\..*" ];  // regexp for whitelisted urls
 const blacklistUrls = []; // regexp for blacklisted urls
-const whitelistOrigins = [".*"]; // regexp for whitelisted origins
+const whitelistOrigins = [
+    /*".*"*/,
+    "ssd.jpl.nasa.gov"
+]; // regexp for whitelisted origins
 
 // Function to check if a given URI or origin is listed in the whitelist or blacklist
 function isListedInWhitelist(uri, listing) {
