@@ -30,8 +30,6 @@ addEventListener("fetch", async event => {
 
             const originUrl = new URL(event.request.url);
 
-
-
             const targetUrl = decodeURIComponent(
                 decodeURIComponent(originUrl.search.substr(1))
             );
@@ -43,60 +41,7 @@ addEventListener("fetch", async event => {
             ) {
                 let customHeaders = makeCustomHeader(event);
                 if (originUrl.search.startsWith("?")) {
-                    const filteredHeaders = {};
-                    for (const [key, value] of event.request.headers.entries()) {
-                        if (
-                            key.match("^origin") === null &&
-                            key.match("eferer") === null &&
-                            key.match("^cf-") === null &&
-                            key.match("^x-forw") === null &&
-                            key.match("^x-cors-headers") === null
-                        ) {
-                            filteredHeaders[key] = value;
-                        }
-                    }
-
-                    if (customHeaders !== null) {
-                        Object.entries(customHeaders).forEach(
-                            entry => (filteredHeaders[entry[0]] = entry[1])
-                        );
-                    }
-
-                    const newRequest = new Request(event.request, {
-                        redirect: "follow",
-                        headers: filteredHeaders
-                    });
-
-                    const response = await fetch(targetUrl, newRequest);
-                    const responseHeaders = new Headers(response.headers);
-                    const exposedHeaders = [];
-                    const allResponseHeaders = {};
-                    for (const [key, value] of response.headers.entries()) {
-                        exposedHeaders.push(key);
-                        allResponseHeaders[key] = value;
-                    }
-                    exposedHeaders.push("cors-received-headers");
-                    setupCORSHeaders(responseHeaders);
-
-                    responseHeaders.set(
-                        "Access-Control-Expose-Headers",
-                        exposedHeaders.join(",")
-                    );
-                    responseHeaders.set(
-                        "cors-received-headers",
-                        JSON.stringify(allResponseHeaders)
-                    );
-
-                    const responseBody = isPreflightRequest
-                        ? null
-                        : await response.arrayBuffer();
-
-                    const responseInit = {
-                        headers: responseHeaders,
-                        status: isPreflightRequest ? 200 : response.status,
-                        statusText: isPreflightRequest ? "OK" : response.statusText
-                    };
-                    return new Response(responseBody, responseInit);
+                    return createProxyResponse(event, customHeaders, targetUrl);
                 } else {
                     return createEmptyUriResponse(event, customHeaders);
                 }
@@ -115,6 +60,65 @@ function makeCustomHeader(event) {
         return null
     }
 }
+
+async function createProxyResponse(event, customHeaders, targetUrl) {
+    const filteredHeaders = {};
+    for (const [key, value] of event.request.headers.entries()) {
+        if (
+            key.match("^origin") === null &&
+            key.match("eferer") === null &&
+            key.match("^cf-") === null &&
+            key.match("^x-forw") === null &&
+            key.match("^x-cors-headers") === null
+        ) {
+            filteredHeaders[key] = value;
+        }
+    }
+
+    if (customHeaders !== null) {
+        Object.entries(customHeaders).forEach(
+            entry => (filteredHeaders[entry[0]] = entry[1])
+        );
+    }
+
+    const newRequest = new Request(event.request, {
+        redirect: "follow",
+        headers: filteredHeaders
+    });
+
+    const response = await fetch(targetUrl, newRequest);
+    const responseHeaders = new Headers(response.headers);
+    const exposedHeaders = [];
+    const allResponseHeaders = {};
+    for (const [key, value] of response.headers.entries()) {
+        exposedHeaders.push(key);
+        allResponseHeaders[key] = value;
+    }
+    exposedHeaders.push("cors-received-headers");
+    setupCORSHeaders(responseHeaders);
+
+    responseHeaders.set(
+        "Access-Control-Expose-Headers",
+        exposedHeaders.join(",")
+    );
+    responseHeaders.set(
+        "cors-received-headers",
+        JSON.stringify(allResponseHeaders)
+    );
+    
+    const isPreflightRequest = event.request.method === "OPTIONS";
+    const responseBody = isPreflightRequest
+        ? null
+        : await response.arrayBuffer();
+
+    const responseInit = {
+        headers: responseHeaders,
+        status: isPreflightRequest ? 200 : response.status,
+        statusText: isPreflightRequest ? "OK" : response.statusText
+    };
+    return new Response(responseBody, responseInit);
+}
+
 
 function createEmptyUriResponse(event, customHeaders) {
     const responseHeaders = new Headers();
