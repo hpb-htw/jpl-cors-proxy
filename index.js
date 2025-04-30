@@ -26,14 +26,10 @@ const GITHUB_REPO = "https://github.com/hpb-htw/jpl-cors-proxy";
 addEventListener("fetch", async event => {
     event.respondWith(
         (async function () {
-            const isPreflightRequest = event.request.method === "OPTIONS";
-
             const originUrl = new URL(event.request.url);
-
             const targetUrl = decodeURIComponent(
                 decodeURIComponent(originUrl.search.substr(1))
             );
-
             const originHeader = event.request.headers.get("Origin");
             if (
                 !isListedInWhitelist(targetUrl, blacklistUrls) &&
@@ -62,6 +58,25 @@ function makeCustomHeader(event) {
 }
 
 async function createProxyResponse(event, customHeaders, targetUrl) {
+    const response = await fetchTargetUrl(targetUrl, event);
+
+    const isPreflightRequest = event.request.method === "OPTIONS";
+    const responseBody = isPreflightRequest
+        ? null
+        : await response.arrayBuffer();
+
+    const status = isPreflightRequest ?
+        ({status: 200,             statusText: "OK"}) :
+        ({status: response.status, statusText: response.statusText});
+
+    const responseInit = {
+        headers: extractHeader(response, event),
+        ...status
+    };
+    return new Response(responseBody, responseInit);
+}
+
+async function fetchTargetUrl(targetUrl, event) {
     const filteredHeaders = {};
     for (const [key, value] of event.request.headers.entries()) {
         if (
@@ -74,19 +89,19 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
             filteredHeaders[key] = value;
         }
     }
-
     if (customHeaders !== null) {
         Object.entries(customHeaders).forEach(
             entry => (filteredHeaders[entry[0]] = entry[1])
         );
     }
-
     const newRequest = new Request(event.request, {
         redirect: "follow",
         headers: filteredHeaders
     });
+    return await fetch(targetUrl, newRequest);
+}
 
-    const response = await fetch(targetUrl, newRequest);
+function extractHeader(response, event) {
     const responseHeaders = new Headers(response.headers);
     const exposedHeaders = [];
     const allResponseHeaders = {};
@@ -105,20 +120,8 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
         "cors-received-headers",
         JSON.stringify(allResponseHeaders)
     );
-
-    const isPreflightRequest = event.request.method === "OPTIONS";
-    const responseBody = isPreflightRequest
-        ? null
-        : await response.arrayBuffer();
-
-    const responseInit = {
-        headers: responseHeaders,
-        status: isPreflightRequest ? 200 : response.status,
-        statusText: isPreflightRequest ? "OK" : response.statusText
-    };
-    return new Response(responseBody, responseInit);
+    return responseHeaders;
 }
-
 
 function createEmptyUriResponse(event, customHeaders) {
     const responseHeaders = new Headers();
