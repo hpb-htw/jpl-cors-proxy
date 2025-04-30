@@ -1,8 +1,8 @@
 /*
 CORS Anywhere as a Cloudflare Worker!
-(c) 2019 by Zibri (www.zibri.org)
-email: zibri AT zibri DOT org
-https://github.com/Zibri/cloudflare-cors-anywhere
+rewrite original implementation of https://github.com/Zibri/cloudflare-cors-anywhere
+
+https://github.com/hpb-htw/jpl-cors-proxy
 
 This Cloudflare Worker script acts as a CORS proxy that allows
 cross-origin resource sharing for specified origins and URLs.
@@ -30,29 +30,7 @@ addEventListener("fetch", async event => {
 
             const originUrl = new URL(event.request.url);
 
-            // Function to modify headers to enable CORS
-            function setupCORSHeaders(headers) {
-                headers.set(
-                    "Access-Control-Allow-Origin",
-                    event.request.headers.get("Origin")
-                );
-                if (isPreflightRequest) {
-                    headers.set(
-                        "Access-Control-Allow-Methods",
-                        event.request.headers.get("access-control-request-method")
-                    );
-                    const requestedHeaders = event.request.headers.get(
-                        "access-control-request-headers"
-                    );
 
-                    if (requestedHeaders) {
-                        headers.set("Access-Control-Allow-Headers", requestedHeaders);
-                    }
-
-                    headers.delete("X-Content-Type-Options"); // Remove X-Content-Type-Options header
-                }
-                return headers;
-            }
 
             const targetUrl = decodeURIComponent(
                 decodeURIComponent(originUrl.search.substr(1))
@@ -128,20 +106,7 @@ addEventListener("fetch", async event => {
                     };
                     return new Response(responseBody, responseInit);
                 } else {
-                    const responseHeaders = new Headers();
-                    setupCORSHeaders(responseHeaders);
-
-                    return new Response(
-                        "CLOUDFLARE-CORS-ANYWHERE\n\n" +
-                        "Source:\nhttps://github.com/Zibri/cloudflare-cors-anywhere\n\n" +
-                        (customHeaders !== null
-                            ? "\nx-cors-headers: " + JSON.stringify(customHeaders)
-                            : ""),
-                        {
-                            status: 200,
-                            headers: responseHeaders
-                        }
-                    );
+                    return createEmptyUriResponse(event, customHeaders);
                 }
             } else {
                 return createForbiddenResponse();
@@ -149,6 +114,23 @@ addEventListener("fetch", async event => {
         })()
     );
 });
+
+function createEmptyUriResponse(event, customHeaders) {
+    const responseHeaders = new Headers();
+    setupCORSHeaders(responseHeaders, event);
+
+    return new Response(
+        "CLOUDFLARE-CORS-ANYWHERE\n\n" +
+        `Source:\n${GITHUB_REPO}\n\n` +
+        (customHeaders !== null
+            ? "\nx-cors-headers: " + JSON.stringify(customHeaders)
+            : ""),
+        {
+            status: 200,
+            headers: responseHeaders
+        }
+    );
+}
 
 function createForbiddenResponse() {
     return new Response(
@@ -178,4 +160,28 @@ function isListedInWhitelist(uri, listing) {
         isListed = true; // true accepts null origins, false would reject them
     }
     return isListed;
+}
+
+// Function to modify headers to enable CORS
+function setupCORSHeaders(headers, event) {
+    headers.set(
+        "Access-Control-Allow-Origin",
+        event.request.headers.get("Origin")
+    );
+    if (isPreflightRequest) {
+        headers.set(
+            "Access-Control-Allow-Methods",
+            event.request.headers.get("access-control-request-method")
+        );
+        const requestedHeaders = event.request.headers.get(
+            "access-control-request-headers"
+        );
+
+        if (requestedHeaders) {
+            headers.set("Access-Control-Allow-Headers", requestedHeaders);
+        }
+
+        headers.delete("X-Content-Type-Options"); // Remove X-Content-Type-Options header
+    }
+    return headers;
 }
