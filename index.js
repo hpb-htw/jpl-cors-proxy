@@ -27,22 +27,22 @@ addEventListener("fetch", async event => {
     event.respondWith(
         (async function () {
             const originUrl = new URL(event.request.url);
-            const targetUrl = decodeURIComponent(
-                decodeURIComponent(originUrl.search.substr(1))
-            );
-            const originHeader = event.request.headers.get("Origin");
-            if (
-                !isListedInWhitelist(targetUrl, blacklistUrls) &&
-                isListedInWhitelist(originHeader, whitelistOrigins)
-            ) {
-                let customHeaders = makeCustomHeader(event);
-                if (originUrl.search.startsWith("?")) {
+            const customHeaders = makeCustomHeader(event);
+            if(originUrl.search.startsWith('?')) {
+                const targetUrl = decodeURIComponent(
+                    decodeURIComponent(originUrl.search.slice(1))
+                );
+                const originHeader = event.request.headers.get("Origin");
+                if (
+                    !isListedInWhitelist(targetUrl, blacklistUrls) &&
+                    isListedInWhitelist(originHeader, whitelistOrigins)
+                ){
                     return createProxyResponse(event, customHeaders, targetUrl);
-                } else {
-                    return createEmptyUriResponse(event, customHeaders);
+                }else {
+                    return createForbiddenResponse();
                 }
             } else {
-                return createForbiddenResponse();
+                return createEmptyUriResponse(event, customHeaders);
             }
         })()
     );
