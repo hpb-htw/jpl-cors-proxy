@@ -17,48 +17,48 @@ const GITHUB_REPO = "https://github.com/hpb-htw/jpl-cors-proxy";
 
 // Event listener for incoming fetch requests
 addEventListener("fetch", async event => {
-    event.respondWith(
-        (async function () {
-            const originUrl = new URL(event.request.url);
-            const customHeaders = makeCustomHeader(event);
-            if(originUrl.search.startsWith('?')) {
-                const targetUrl = decodeURIComponent(
-                    decodeURIComponent(originUrl.search.slice(1))
-                );
-                const originHeader = event.request.headers.get("Origin");
-                if(originHeader) { // cross domain with origin header
-                    if (!isListedIn(targetUrl, blacklistUrls) &&
-                        isListedIn(originHeader, whitelistOrigins)
-                    ) {
-                        return createProxyResponse(event, customHeaders, targetUrl);
-                    } else {
-                        return createForbiddenResponse(`origin blocked ${originHeader}`);
-                    }
-                } else if ( isSameDomain(event.request) ){
-                    return createProxyResponse(event, customHeaders, targetUrl);
-                } else {
-                    return createForbiddenResponse(`Header 'Origin' is not set`);
-                }
-            } else {
-                return createEmptyUriResponse(event, customHeaders);
-            }
-        })()
-    );
+    event.respondWith( handleRequest(event.request) );
 });
 
-function makeCustomHeader(event) {
+async function handleRequest(request) {
+    const originUrl = new URL(request.url);
+    //const customHeaders = makeCustomHeader(request);
+    if(originUrl.search.startsWith('?')) {
+        const targetUrl = decodeURIComponent(
+            decodeURIComponent(originUrl.search.slice(1))
+        );
+        const originHeader = request.headers.get("Origin");
+        if(originHeader) { // cross domain with origin header
+            if (!isListedIn(targetUrl, blacklistUrls) &&
+                isListedIn(originHeader, whitelistOrigins)
+            ) {
+                return createProxyResponse(request, /*customHeaders,*/ targetUrl);
+            } else {
+                return createForbiddenResponse(`origin blocked ${originHeader}`);
+            }
+        } else {
+            return createForbiddenResponse(`Header 'Origin' is not set`);
+        }
+    } else {
+        return createEmptyUriResponse(request, customHeaders);
+    }
+}
+
+
+
+function makeCustomHeader(request) {
     try {
-        const xCorsHeader = event.request.headers.get("x-cors-headers");
+        const xCorsHeader = request.headers.get("x-cors-headers");
         return JSON.parse(xCorsHeader);
     }catch (e) {
         return null
     }
 }
 
-async function createProxyResponse(event, customHeaders, targetUrl) {
-    const response = await fetchTargetUrl(targetUrl, customHeaders, event);
+async function createProxyResponse(request, customHeaders, targetUrl) {
+    const response = await fetchTargetUrl(targetUrl, customHeaders, request);
 
-    const isPreflightRequest = event.request.method === "OPTIONS";
+    const isPreflightRequest = request.method === "OPTIONS";
     const responseBody = isPreflightRequest
         ? null
         : await response.arrayBuffer();
@@ -68,15 +68,15 @@ async function createProxyResponse(event, customHeaders, targetUrl) {
         ({status: response.status, statusText: response.statusText});
 
     const responseInit = {
-        headers: extractHeader(response, event),
+        headers: extractHeader(response, request),
         ...status
     };
     return new Response(responseBody, responseInit);
 }
 
-async function fetchTargetUrl(targetUrl, customHeaders, event) {
+async function fetchTargetUrl(targetUrl, /*customHeaders,*/ request) {
     const filteredHeaders = {};
-    for (const [key, value] of event.request.headers.entries()) {
+    for (const [key, value] of request.headers.entries()) {
         if (
             key.match("^origin") === null &&
             key.match("eferer") === null &&
@@ -87,19 +87,20 @@ async function fetchTargetUrl(targetUrl, customHeaders, event) {
             filteredHeaders[key] = value;
         }
     }
+    const customHeaders = makeCustomHeader(request);
     if (customHeaders !== null) {
         Object.entries(customHeaders).forEach(
             entry => (filteredHeaders[entry[0]] = entry[1])
         );
     }
-    const newRequest = new Request(event.request, {
+    const newRequest = new Request(request, {
         redirect: "follow",
         headers: filteredHeaders
     });
     return await fetch(targetUrl, newRequest);
 }
 
-function extractHeader(response, event) {
+function extractHeader(response, request) {
     const responseHeaders = new Headers(response.headers);
     const exposedHeaders = [];
     const allResponseHeaders = {};
@@ -108,7 +109,7 @@ function extractHeader(response, event) {
         allResponseHeaders[key] = value;
     }
     exposedHeaders.push("cors-received-headers");
-    setupCORSHeaders(responseHeaders, event);
+    setupCORSHeaders(responseHeaders, request);
 
     responseHeaders.set(
         "Access-Control-Expose-Headers",
@@ -121,16 +122,10 @@ function extractHeader(response, event) {
     return responseHeaders;
 }
 
-function isSameDomain(request) {
-    const host = request.headers.get('Host');
-    const origin = this.origin;
-    throw new Error(`${host} |||| ${origin}`);
-}
-
-function createEmptyUriResponse(event, customHeaders) {
+function createEmptyUriResponse(request/*, customHeaders*/) {
     const responseHeaders = new Headers();
-    setupCORSHeaders(responseHeaders, event);
-
+    setupCORSHeaders(responseHeaders, request);
+    const customHeaders = makeCustomHeader(request);
     return new Response(
         "CLOUDFLARE-CORS-ANYWHERE\n\n" +
         `Source:\n${GITHUB_REPO}\n\n` +
@@ -177,18 +172,18 @@ function isListedIn(uri, listing) {
 }
 
 // Function to modify headers to enable CORS
-function setupCORSHeaders(headers, event) {
-    const isPreflightRequest = event.request.method === "OPTIONS";
+function setupCORSHeaders(headers, request) {
+    const isPreflightRequest = request.method === "OPTIONS";
     headers.set(
         "Access-Control-Allow-Origin",
-        event.request.headers.get("Origin")
+        request.headers.get("Origin")
     );
     if (isPreflightRequest) {
         headers.set(
             "Access-Control-Allow-Methods",
-            event.request.headers.get("access-control-request-method")
+            request.headers.get("access-control-request-method")
         );
-        const requestedHeaders = event.request.headers.get(
+        const requestedHeaders = request.headers.get(
             "access-control-request-headers"
         );
 
