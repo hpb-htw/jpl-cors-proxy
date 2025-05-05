@@ -33,9 +33,9 @@ addEventListener("fetch", async event => {
                     decodeURIComponent(originUrl.search.slice(1))
                 );
                 const originHeader = event.request.headers.get("Origin");
-                if (
-                    !isListedInWhitelist(targetUrl, blacklistUrls) &&
-                    isListedInWhitelist(originHeader, whitelistOrigins)
+                if ( originHeader &&
+                    !isListedIn(targetUrl, blacklistUrls) &&
+                    isListedIn(originHeader, whitelistOrigins)
                 ){
                     return createProxyResponse(event, customHeaders, targetUrl);
                 }else {
@@ -155,7 +155,7 @@ function createForbiddenResponse() {
 }
 
 // Function to check if a given URI or origin is listed in the whitelist or blacklist
-function isListedInWhitelist(uri, listing) {
+function isListedIn(uri, listing) {
     let isListed = false;
     if (typeof uri === "string") {
         for(const pattern of listing) {
