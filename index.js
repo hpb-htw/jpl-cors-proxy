@@ -124,8 +124,7 @@ function extractHeader(response, event) {
 function isSameDomain(request) {
     const host = request.headers.get('Host');
     const origin = this.origin;
-    console.log({host, origin});
-    return true;
+    throw new Error(`${host} |||| ${origin}`);
 }
 
 function createEmptyUriResponse(event, customHeaders) {
