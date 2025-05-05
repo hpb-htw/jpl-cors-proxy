@@ -142,13 +142,13 @@ function createEmptyUriResponse(event, customHeaders) {
 
 function createForbiddenResponse() {
     return new Response(
-        "Create your own CORS proxy</br>\n" +
-        `<a href='${GITHUB_REPO}'>${GITHUB_REPO}</a></br>\n` ,
+        "Create your own CORS proxy by using\n" +
+        `${GITHUB_REPO}\n` ,
         {
             status: 403,
             statusText: "Forbidden",
             headers: {
-                "Content-Type": "text/html"
+                "Content-Type": "text/plaintext"
             }
         }
     );
