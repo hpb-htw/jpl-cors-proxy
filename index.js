@@ -32,7 +32,7 @@ async function handleRequest(request) {
             if (!isListedIn(targetUrl, blacklistUrls) &&
                 isListedIn(originHeader, whitelistOrigins)
             ) {
-                return createProxyResponse(request, /*customHeaders,*/ targetUrl);
+                return createProxyResponse(request, targetUrl);
             } else {
                 return createForbiddenResponse(`origin blocked ${originHeader}`);
             }
@@ -40,7 +40,7 @@ async function handleRequest(request) {
             return createForbiddenResponse(`Header 'Origin' is not set`);
         }
     } else {
-        return createEmptyUriResponse(request/*, customHeaders*/);
+        return createEmptyUriResponse(request);
     }
 }
 
@@ -55,8 +55,8 @@ function makeCustomHeader(request) {
     }
 }
 
-async function createProxyResponse(request, /*customHeaders,*/ targetUrl) {
-    const response = await fetchTargetUrl(targetUrl/*, customHeaders*/, request);
+async function createProxyResponse(request, targetUrl) {
+    const response = await fetchTargetUrl(targetUrl, request);
 
     const isPreflightRequest = request.method === "OPTIONS";
     const responseBody = isPreflightRequest
@@ -74,7 +74,7 @@ async function createProxyResponse(request, /*customHeaders,*/ targetUrl) {
     return new Response(responseBody, responseInit);
 }
 
-async function fetchTargetUrl(targetUrl, /*customHeaders,*/ request) {
+async function fetchTargetUrl(targetUrl, request) {
     const filteredHeaders = {};
     for (const [key, value] of request.headers.entries()) {
         if (
@@ -122,7 +122,7 @@ function extractHeader(response, request) {
     return responseHeaders;
 }
 
-function createEmptyUriResponse(request/*, customHeaders*/) {
+function createEmptyUriResponse(request) {
     const responseHeaders = new Headers();
     setupCORSHeaders(responseHeaders, request);
     const customHeaders = makeCustomHeader(request);
