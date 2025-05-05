@@ -40,7 +40,7 @@ async function handleRequest(request) {
             return createForbiddenResponse(`Header 'Origin' is not set`);
         }
     } else {
-        return createEmptyUriResponse(request, customHeaders);
+        return createEmptyUriResponse(request/*, customHeaders*/);
     }
 }
 
@@ -55,8 +55,8 @@ function makeCustomHeader(request) {
     }
 }
 
-async function createProxyResponse(request, customHeaders, targetUrl) {
-    const response = await fetchTargetUrl(targetUrl, customHeaders, request);
+async function createProxyResponse(request, /*customHeaders,*/ targetUrl) {
+    const response = await fetchTargetUrl(targetUrl/*, customHeaders*/, request);
 
     const isPreflightRequest = request.method === "OPTIONS";
     const responseBody = isPreflightRequest
