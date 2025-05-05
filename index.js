@@ -34,7 +34,7 @@ addEventListener("fetch", async event => {
                     } else {
                         return createForbiddenResponse(`origin blocked ${originHeader}`);
                     }
-                } else if ( isSameDomain(request) ){
+                } else if ( isSameDomain(event.request) ){
                     return createProxyResponse(event, customHeaders, targetUrl);
                 } else {
                     return createForbiddenResponse(`Header 'Origin' is not set`);
