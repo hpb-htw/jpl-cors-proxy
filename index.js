@@ -26,7 +26,7 @@ addEventListener("fetch", async event => {
                     decodeURIComponent(originUrl.search.slice(1))
                 );
                 const originHeader = event.request.headers.get("Origin");
-                if(originHeader) {
+                if(originHeader) { // cross domain with origin header
                     if (!isListedIn(targetUrl, blacklistUrls) &&
                         isListedIn(originHeader, whitelistOrigins)
                     ) {
@@ -34,8 +34,10 @@ addEventListener("fetch", async event => {
                     } else {
                         return createForbiddenResponse(`origin blocked ${originHeader}`);
                     }
+                } else if ( isSameDomain(request) ){
+                    return createProxyResponse(event, customHeaders, targetUrl);
                 } else {
-                    return createForbiddenResponse(`origin is not set`);
+                    return createForbiddenResponse(`Header 'Origin' is not set`);
                 }
             } else {
                 return createEmptyUriResponse(event, customHeaders);
@@ -117,6 +119,13 @@ function extractHeader(response, event) {
         JSON.stringify(allResponseHeaders)
     );
     return responseHeaders;
+}
+
+function isSameDomain(request) {
+    const host = request.headers.get('Host');
+    const origin = this.origin;
+    console.log({host, origin});
+    return true;
 }
 
 function createEmptyUriResponse(event, customHeaders) {
