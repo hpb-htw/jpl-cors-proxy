@@ -4,13 +4,6 @@ rewrite original implementation of https://github.com/Zibri/cloudflare-cors-anyw
 
 https://github.com/hpb-htw/jpl-cors-proxy
 
-This Cloudflare Worker script acts as a CORS proxy that allows
-cross-origin resource sharing for specified origins and URLs.
-It handles OPTIONS preflight requests and modifies response headers accordingly to enable CORS.
-The script also includes functionality to parse custom headers and provide detailed information
-about the CORS proxy service when accessed without specific parameters.
-The script is configurable with whitelist and blacklist patterns, although the blacklist feature is currently unused.
-The main goal is to facilitate cross-origin requests while enforcing specific security and rate-limiting policies.
 */
 
 // Configuration: Whitelist and Blacklist (not used in this version)
@@ -33,13 +26,16 @@ addEventListener("fetch", async event => {
                     decodeURIComponent(originUrl.search.slice(1))
                 );
                 const originHeader = event.request.headers.get("Origin");
-                if ( originHeader &&
-                    !isListedIn(targetUrl, blacklistUrls) &&
-                    isListedIn(originHeader, whitelistOrigins)
-                ){
-                    return createProxyResponse(event, customHeaders, targetUrl);
-                }else {
-                    return createForbiddenResponse();
+                if(originHeader) {
+                    if (!isListedIn(targetUrl, blacklistUrls) &&
+                        isListedIn(originHeader, whitelistOrigins)
+                    ) {
+                        return createProxyResponse(event, customHeaders, targetUrl);
+                    } else {
+                        return createForbiddenResponse(`origin blocked ${originHeader}`);
+                    }
+                } else {
+                    return createForbiddenResponse(`origin is not set`);
                 }
             } else {
                 return createEmptyUriResponse(event, customHeaders);
@@ -140,10 +136,12 @@ function createEmptyUriResponse(event, customHeaders) {
     );
 }
 
-function createForbiddenResponse() {
+function createForbiddenResponse(msg) {
+    const responseText = `${msg}\n
+    Create your own CORS proxy by using
+    ${GITHUB_REPO}\n`;
     return new Response(
-        "Create your own CORS proxy by using\n" +
-        `${GITHUB_REPO}\n` ,
+        responseText,
         {
             status: 403,
             statusText: "Forbidden",
