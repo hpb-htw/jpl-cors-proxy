@@ -1,5 +1,5 @@
 {
-    "name": "{{ project-name }}",
+    "name": "jpl-cors-proxy",
     "version": "1.0.0",
     "description": "A CORS proxy running in a worker",
     "main": "index.js",
