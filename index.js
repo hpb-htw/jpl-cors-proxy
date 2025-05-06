@@ -6,23 +6,27 @@ https://github.com/hpb-htw/jpl-cors-proxy
 
 */
 
-// Configuration: Whitelist and Blacklist (not used in this version)
-// whitelist = [ "^http.?://www.zibri.org$", "zibri.org$", "test\\..*" ];  // regexp for whitelisted urls
+/**
+ * Blacklist of target URLs which are blocked over this proxy
+ * */
 const blacklistUrls = []; // regexp for blacklisted urls
+
+/**
+ * Whitelist of origins, which are allowed to use this proxy
+ * */
 const whitelistOrigins = [
     ".*"
 ]; // regexp for whitelisted origins
+// whitelist = [ "^http.?://www.zibri.org$", "zibri.org$", "test\\..*" ];  // regexp for whitelisted urls
 
 const GITHUB_REPO = "https://github.com/hpb-htw/jpl-cors-proxy";
 
-// Event listener for incoming fetch requests
 addEventListener("fetch", async event => {
     event.respondWith( handleRequest(event.request) );
 });
 
 async function handleRequest(request) {
     const originUrl = new URL(request.url);
-    //const customHeaders = makeCustomHeader(request);
     if(originUrl.search.startsWith('?')) {
         const targetUrl = decodeURIComponent(
             decodeURIComponent(originUrl.search.slice(1))
@@ -36,7 +40,7 @@ async function handleRequest(request) {
             } else {
                 return createForbiddenResponse(`origin blocked ${originHeader}`);
             }
-        } else {
+        } else { // mostly over browser
             return createForbiddenResponse(`Header 'Origin' is not set`);
         }
     } else {
@@ -46,7 +50,7 @@ async function handleRequest(request) {
 
 
 
-function makeCustomHeader(request) {
+function makeXCorsHeader(request) {
     try {
         const xCorsHeader = request.headers.get("x-cors-headers");
         return JSON.parse(xCorsHeader);
@@ -56,19 +60,19 @@ function makeCustomHeader(request) {
 }
 
 async function createProxyResponse(request, targetUrl) {
-    const response = await fetchTargetUrl(targetUrl, request);
+    const targetResponse = await fetchTargetUrl(targetUrl, request);
 
     const isPreflightRequest = request.method === "OPTIONS";
     const responseBody = isPreflightRequest
         ? null
-        : await response.arrayBuffer();
+        : await targetResponse.arrayBuffer();
 
     const status = isPreflightRequest ?
         ({status: 200,             statusText: "OK"}) :
-        ({status: response.status, statusText: response.statusText});
+        ({status: targetResponse.status, statusText: targetResponse.statusText});
 
     const responseInit = {
-        headers: extractHeader(response, request),
+        headers: makeProxyResponseHeader(request, targetResponse),
         ...status
     };
     return new Response(responseBody, responseInit);
@@ -87,7 +91,7 @@ async function fetchTargetUrl(targetUrl, request) {
             filteredHeaders[key] = value;
         }
     }
-    const customHeaders = makeCustomHeader(request);
+    const customHeaders = makeXCorsHeader(request);
     if (customHeaders !== null) {
         Object.entries(customHeaders).forEach(
             entry => (filteredHeaders[entry[0]] = entry[1])
@@ -100,8 +104,8 @@ async function fetchTargetUrl(targetUrl, request) {
     return await fetch(targetUrl, newRequest);
 }
 
-function extractHeader(response, request) {
-    const responseHeaders = new Headers(response.headers);
+function makeProxyResponseHeader(request, targetResponse) {
+    const responseHeaders = new Headers(targetResponse.headers);
     const exposedHeaders = [];
     const allResponseHeaders = {};
     for (const [key, value] of response.headers.entries()) {
@@ -125,7 +129,7 @@ function extractHeader(response, request) {
 function createEmptyUriResponse(request) {
     const responseHeaders = new Headers();
     setupCORSHeaders(responseHeaders, request);
-    const customHeaders = makeCustomHeader(request);
+    const customHeaders = makeXCorsHeader(request);
     return new Response(
         "CLOUDFLARE-CORS-ANYWHERE\n\n" +
         `Source:\n${GITHUB_REPO}\n\n` +
@@ -155,15 +159,11 @@ function createForbiddenResponse(msg) {
     );
 }
 
-// Function to check if a given URI or origin is listed in the whitelist or blacklist
-function isListedIn(uri, listing) {
+// Function to check if a given URI or origin is listed in a list
+function isListedIn(uri, list) {
     let isListed = false;
     if (typeof uri === "string") {
-        for(const pattern of listing) {
-            if (uri.match(pattern)) {
-                return true;
-            }
-        }
+        isListed = list.some( pattern => uri.match(pattern) );
     } else {
         // When URI is null (e.g., when Origin header is missing), decide based on the implementation
         isListed = true; // true accepts null origins, false would reject them
