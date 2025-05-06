@@ -1,6 +1,5 @@
 /*
 CORS Anywhere as a Cloudflare Worker!
-rewrite original implementation of https://github.com/Zibri/cloudflare-cors-anywhere
 
 https://github.com/hpb-htw/jpl-cors-proxy
 
@@ -158,7 +157,6 @@ function createForbiddenResponse(msg) {
         }
     );
 }
-
 
 function isListedIn(uri, list) {
     if (typeof uri === "string") {
