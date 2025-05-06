@@ -108,7 +108,7 @@ function makeProxyResponseHeader(request, targetResponse) {
     const responseHeaders = new Headers(targetResponse.headers);
     const exposedHeaders = [];
     const allResponseHeaders = {};
-    for (const [key, value] of response.headers.entries()) {
+    for (const [key, value] of targetResponse.headers.entries()) {
         exposedHeaders.push(key);
         allResponseHeaders[key] = value;
     }
