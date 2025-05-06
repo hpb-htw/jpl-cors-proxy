@@ -1,7 +1,5 @@
 # jpl-cors-proxy
 
-A fork of [Zibri/cloudflare-cors-anywhere](https://github.com/Zibri/cloudflare-cors-anywhere)
-
 ## Source:
 
 [jpl-cors-proxy](https://github.com/hpb-htw/jpl-cors-proxy)

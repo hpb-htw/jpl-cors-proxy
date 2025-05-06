@@ -159,19 +159,15 @@ function createForbiddenResponse(msg) {
     );
 }
 
-// Function to check if a given URI or origin is listed in a list
+
 function isListedIn(uri, list) {
-    let isListed = false;
     if (typeof uri === "string") {
-        isListed = list.some( pattern => uri.match(pattern) );
+        return list.some( pattern => uri.match(pattern) );
     } else {
-        // When URI is null (e.g., when Origin header is missing), decide based on the implementation
-        isListed = true; // true accepts null origins, false would reject them
+        return  true;
     }
-    return isListed;
 }
 
-// Function to modify headers to enable CORS
 function setupCORSHeaders(headers, request) {
     const isPreflightRequest = request.method === "OPTIONS";
     headers.set(
