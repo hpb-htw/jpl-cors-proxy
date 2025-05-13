@@ -1,4 +1,4 @@
-name = "sunray"
+name = "jpl-cors-proxy"
 main = "index.js"
 compatibility_date = "2023-04-17"
 
